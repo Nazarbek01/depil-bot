@@ -1,0 +1,4 @@
+2026-05-04 15:41:38,988 | INFO     | __main__: 🚀 Запуск бота Studio Depil Rina...
+2026-05-04 15:41:39,789 | INFO     | database: Database initialised at depil_studio.db
+2026-05-04 15:41:39,790 | INFO     | __main__: ✅ Bot started. Database ready.
+2026-05-04 15:41:40,078 | INFO     | telegram.ext.Application: Application started
