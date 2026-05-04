@@ -46,6 +46,21 @@ from handlers.booking_handlers import (
     STATE_CONFIRM,
 )
 from handlers.admin_handlers import (
+    cmd_admin,
+    cb_admin_menu,
+    cb_adm_today,
+    cb_adm_pick_date,
+    cb_adm_date,
+    cb_adm_cancel,
+    cb_adm_do_cancel,
+    cb_adm_block_pick,
+    cb_adm_block_date,
+    cb_adm_do_block,
+    cb_adm_unblock_pick,
+    cb_adm_unblock_date,
+    cb_adm_do_unblock,
+    cb_adm_noop,
+    cb_adm_stats,
     cb_cancel_menu,
     cb_cancel_id,
     cb_do_cancel,
@@ -123,20 +138,37 @@ def register_handlers(app: Application) -> None:
     # Команды
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help",  cmd_help))
+    app.add_handler(CommandHandler("admin", cmd_admin))
 
-    # ConversationHandler (запись) — должен идти РАНЬШЕ общих CallbackQuery
+    # ConversationHandler (запись)
     app.add_handler(build_booking_conversation())
 
     # Навигация главного меню
-    app.add_handler(CallbackQueryHandler(cb_back_main,     pattern="^back_main$"))
-    app.add_handler(CallbackQueryHandler(cb_contacts,      pattern="^contacts$"))
-    app.add_handler(CallbackQueryHandler(cb_my_bookings,   pattern="^my_bookings$"))
+    app.add_handler(CallbackQueryHandler(cb_back_main,   pattern="^back_main$"))
+    app.add_handler(CallbackQueryHandler(cb_contacts,    pattern="^contacts$"))
+    app.add_handler(CallbackQueryHandler(cb_my_bookings, pattern="^my_bookings$"))
 
-    # Отмена записи
-    app.add_handler(CallbackQueryHandler(cb_cancel_menu,   pattern="^cancel_menu$"))
-    app.add_handler(CallbackQueryHandler(cb_cancel_id,     pattern=r"^cancel_id_\d+$"))
-    app.add_handler(CallbackQueryHandler(cb_do_cancel,     pattern=r"^do_cancel_\d+$"))
-    app.add_handler(CallbackQueryHandler(cb_view_booking,  pattern=r"^view_booking_\d+$"))
+    # Отмена записи (пользователь)
+    app.add_handler(CallbackQueryHandler(cb_cancel_menu, pattern="^cancel_menu$"))
+    app.add_handler(CallbackQueryHandler(cb_cancel_id,   pattern=r"^cancel_id_\d+$"))
+    app.add_handler(CallbackQueryHandler(cb_do_cancel,   pattern=r"^do_cancel_\d+$"))
+    app.add_handler(CallbackQueryHandler(cb_view_booking,pattern=r"^view_booking_\d+$"))
+
+    # ── Админ-панель ──
+    app.add_handler(CallbackQueryHandler(cb_admin_menu,      pattern="^adm_menu$"))
+    app.add_handler(CallbackQueryHandler(cb_adm_today,       pattern="^adm_today$"))
+    app.add_handler(CallbackQueryHandler(cb_adm_pick_date,   pattern="^adm_pick_date$"))
+    app.add_handler(CallbackQueryHandler(cb_adm_date,        pattern=r"^adm_date_"))
+    app.add_handler(CallbackQueryHandler(cb_adm_cancel,      pattern=r"^adm_cancel_\d+$"))
+    app.add_handler(CallbackQueryHandler(cb_adm_do_cancel,   pattern=r"^adm_do_cancel_\d+$"))
+    app.add_handler(CallbackQueryHandler(cb_adm_block_pick,  pattern="^adm_block_pick$"))
+    app.add_handler(CallbackQueryHandler(cb_adm_block_date,  pattern=r"^adm_block_date_"))
+    app.add_handler(CallbackQueryHandler(cb_adm_do_block,    pattern=r"^adm_do_block_"))
+    app.add_handler(CallbackQueryHandler(cb_adm_unblock_pick,pattern="^adm_unblock_pick$"))
+    app.add_handler(CallbackQueryHandler(cb_adm_unblock_date,pattern=r"^adm_unblock_date_"))
+    app.add_handler(CallbackQueryHandler(cb_adm_do_unblock,  pattern=r"^adm_do_unblock_"))
+    app.add_handler(CallbackQueryHandler(cb_adm_noop,        pattern="^adm_noop$"))
+    app.add_handler(CallbackQueryHandler(cb_adm_stats,       pattern="^adm_stats$"))
 
 
 # ──────────────────────────────────────────────
@@ -146,13 +178,12 @@ def register_handlers(app: Application) -> None:
 async def on_startup(app: Application) -> None:
     db.init_db()
     logger.info("✅ Bot started. Database ready.")
-    # Уведомление администратора о запуске (опционально)
     from config import ADMIN_CHAT_ID
     if ADMIN_CHAT_ID:
         try:
             await app.bot.send_message(
                 chat_id=ADMIN_CHAT_ID,
-                text="✅ <b>Studio Depil Rina Bot</b> запущен и готов к работе!",
+                text="✅ <b>Studio Depil Rina Bot</b> запущен!\n\nАдмин-панель: /admin",
                 parse_mode="HTML"
             )
         except Exception:
