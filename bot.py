@@ -56,6 +56,8 @@ from handlers.admin_handlers import (
     cb_adm_block_pick,
     cb_adm_block_date,
     cb_adm_do_block,
+    cb_adm_block_day_pick,
+    cb_adm_block_day,
     cb_adm_unblock_pick,
     cb_adm_unblock_date,
     cb_adm_do_unblock,
@@ -164,6 +166,8 @@ def register_handlers(app: Application) -> None:
     app.add_handler(CallbackQueryHandler(cb_adm_block_pick,  pattern="^adm_block_pick$"))
     app.add_handler(CallbackQueryHandler(cb_adm_block_date,  pattern=r"^adm_block_date_"))
     app.add_handler(CallbackQueryHandler(cb_adm_do_block,    pattern=r"^adm_do_block_"))
+    app.add_handler(CallbackQueryHandler(cb_adm_block_day_pick, pattern="^adm_block_day_pick$"))
+    app.add_handler(CallbackQueryHandler(cb_adm_block_day,   pattern=r"^adm_block_day_"))
     app.add_handler(CallbackQueryHandler(cb_adm_unblock_pick,pattern="^adm_unblock_pick$"))
     app.add_handler(CallbackQueryHandler(cb_adm_unblock_date,pattern=r"^adm_unblock_date_"))
     app.add_handler(CallbackQueryHandler(cb_adm_do_unblock,  pattern=r"^adm_do_unblock_"))

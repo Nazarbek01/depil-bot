@@ -8,8 +8,8 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 import database as db
-from config import STUDIO_NAME, MASTER_NAME, STUDIO_PHONE, STUDIO_CITY, STUDIO_INSTAGRAM
-from keyboards import main_menu_kb, bookings_list_kb, back_to_main_kb
+from config import STUDIO_NAME, MASTER_NAME, STUDIO_PHONE, STUDIO_CITY, STUDIO_INSTAGRAM, ADMIN_CHAT_ID
+from keyboards import main_menu_kb, admin_main_menu_kb, bookings_list_kb, back_to_main_kb
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
 
-    # Сохраняем / обновляем клиента
     db.upsert_client(
         telegram_id=user.id,
         username=user.username,
@@ -36,7 +35,10 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "посмотреть ваши записи или отменить их.\n\n"
         "Выберите действие 👇"
     )
-    await update.message.reply_text(text, parse_mode="HTML", reply_markup=main_menu_kb())
+
+    # Если это администратор — показываем меню с кнопкой админ-панели
+    kb = admin_main_menu_kb() if (ADMIN_CHAT_ID and user.id == ADMIN_CHAT_ID) else main_menu_kb()
+    await update.message.reply_text(text, parse_mode="HTML", reply_markup=kb)
 
 
 # ──────────────────────────────────────────────
@@ -47,11 +49,14 @@ async def cb_back_main(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     query = update.callback_query
     await query.answer()
 
-    text = (
-        "🏠 <b>Главное меню</b>\n\n"
-        "Выберите действие 👇"
+    user = update.effective_user
+    kb = admin_main_menu_kb() if (ADMIN_CHAT_ID and user.id == ADMIN_CHAT_ID) else main_menu_kb()
+
+    await query.edit_message_text(
+        "🏠 <b>Главное меню</b>\n\nВыберите действие 👇",
+        parse_mode="HTML",
+        reply_markup=kb
     )
-    await query.edit_message_text(text, parse_mode="HTML", reply_markup=main_menu_kb())
 
 
 # ──────────────────────────────────────────────

@@ -28,6 +28,7 @@ def admin_menu_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("📅 Записи на сегодня",     callback_data="adm_today")],
         [InlineKeyboardButton("🗓 Записи на другую дату", callback_data="adm_pick_date")],
         [InlineKeyboardButton("🚫 Заблокировать слот",    callback_data="adm_block_pick")],
+        [InlineKeyboardButton("📵 Заблокировать день",    callback_data="adm_block_day_pick")],
         [InlineKeyboardButton("✅ Разблокировать слот",   callback_data="adm_unblock_pick")],
         [InlineKeyboardButton("📊 Статистика",            callback_data="adm_stats")],
     ])
@@ -294,6 +295,52 @@ async def cb_adm_do_block(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     d = date.fromisoformat(date_str)
     await query.edit_message_text(
         f"🔒 Слот {d.day} {MONTHS_RU[d.month]} в {time_str} заблокирован.",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("⬅️ В меню", callback_data="adm_menu")]
+        ])
+    )
+
+
+# ──────────────────────────────────────────────
+# Блокировка всего дня
+# ──────────────────────────────────────────────
+
+async def cb_adm_block_day_pick(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+    if not is_admin(query.from_user.id):
+        return
+
+    today = date.today()
+    rows = []
+    row = []
+    for i in range(14):
+        d = today + timedelta(days=i)
+        label = f"{d.day} {MONTHS_RU[d.month]}"
+        row.append(InlineKeyboardButton(label, callback_data=f"adm_block_day_{d.isoformat()}"))
+        if len(row) == 4:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    rows.append([InlineKeyboardButton("⬅️ Назад", callback_data="adm_menu")])
+    await query.edit_message_text("📵 Выберите день для полной блокировки:", reply_markup=InlineKeyboardMarkup(rows))
+
+
+async def cb_adm_block_day(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+    if not is_admin(query.from_user.id):
+        return
+
+    date_str = query.data.replace("adm_block_day_", "")
+    from config import TIME_SLOTS
+    for slot in TIME_SLOTS:
+        db.block_slot(date_str, slot)
+
+    d = date.fromisoformat(date_str)
+    await query.edit_message_text(
+        f"📵 День {d.day} {MONTHS_RU[d.month]} полностью заблокирован.\nЗапись в этот день недоступна.",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("⬅️ В меню", callback_data="adm_menu")]
         ])

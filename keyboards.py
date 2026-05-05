@@ -11,7 +11,7 @@ from config import SERVICES, TIME_SLOTS, BOOKING_DAYS_AHEAD
 
 
 # ──────────────────────────────────────────────
-# Главное меню
+# Главное меню (для клиентов)
 # ──────────────────────────────────────────────
 
 def main_menu_kb() -> InlineKeyboardMarkup:
@@ -20,6 +20,20 @@ def main_menu_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("🗂 Мои записи",        callback_data="my_bookings")],
         [InlineKeyboardButton("❌ Отменить запись",   callback_data="cancel_menu")],
         [InlineKeyboardButton("📞 Контакты студии",   callback_data="contacts")],
+    ])
+
+
+# ──────────────────────────────────────────────
+# Главное меню для администратора (с кнопкой панели)
+# ──────────────────────────────────────────────
+
+def admin_main_menu_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📅 Записаться",        callback_data="book_start")],
+        [InlineKeyboardButton("🗂 Мои записи",        callback_data="my_bookings")],
+        [InlineKeyboardButton("❌ Отменить запись",   callback_data="cancel_menu")],
+        [InlineKeyboardButton("📞 Контакты студии",   callback_data="contacts")],
+        [InlineKeyboardButton("👑 Админ-панель",      callback_data="adm_menu")],
     ])
 
 
@@ -37,7 +51,7 @@ def services_kb() -> InlineKeyboardMarkup:
 
 
 # ──────────────────────────────────────────────
-# Выбор даты (следующие N дней)
+# Выбор даты
 # ──────────────────────────────────────────────
 
 DAYS_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
@@ -67,14 +81,19 @@ def dates_kb() -> InlineKeyboardMarkup:
 
 
 # ──────────────────────────────────────────────
-# Выбор времени (с учётом занятых слотов)
+# Выбор времени
 # ──────────────────────────────────────────────
 
-def times_kb(booked_times: List[str]) -> InlineKeyboardMarkup:
+def times_kb(booked_times: List[str], blocked_times: List[str] = None) -> InlineKeyboardMarkup:
+    if blocked_times is None:
+        blocked_times = []
     rows = []
     row: list = []
     for slot in TIME_SLOTS:
-        if slot in booked_times:
+        if slot in blocked_times:
+            label = f"🔒 {slot}"
+            btn = InlineKeyboardButton(label, callback_data="slot_taken")
+        elif slot in booked_times:
             label = f"🔴 {slot}"
             btn = InlineKeyboardButton(label, callback_data="slot_taken")
         else:
@@ -104,14 +123,10 @@ def confirm_kb() -> InlineKeyboardMarkup:
 
 
 # ──────────────────────────────────────────────
-# Список записей клиента (для отмены)
+# Список записей клиента
 # ──────────────────────────────────────────────
 
 def bookings_list_kb(bookings: list, action_prefix: str = "cancel_id") -> InlineKeyboardMarkup:
-    """
-    bookings: список dict с ключами id, service_name, booking_date, booking_time
-    action_prefix: 'cancel_id' для отмены
-    """
     rows = []
     for b in bookings:
         d = date.fromisoformat(b["booking_date"])
@@ -127,7 +142,7 @@ def bookings_list_kb(bookings: list, action_prefix: str = "cancel_id") -> Inline
 
 
 # ──────────────────────────────────────────────
-# Подтверждение отмены конкретной записи
+# Подтверждение отмены
 # ──────────────────────────────────────────────
 
 def confirm_cancel_kb(booking_id: int) -> InlineKeyboardMarkup:
