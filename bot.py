@@ -6,6 +6,9 @@
 import logging
 import sys
 import asyncio
+import os
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 from telegram import Update
 from telegram.ext import (
@@ -87,7 +90,28 @@ logger = logging.getLogger(__name__)
 
 
 # ──────────────────────────────────────────────
-# ConversationHandler — поток записи
+# Health check server для Render
+# ──────────────────────────────────────────────
+
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
+
+    def log_message(self, *args):
+        pass
+
+
+def run_health_server():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(("0.0.0.0", port), HealthHandler)
+    logger.info(f"Health server on port {port}")
+    server.serve_forever()
+
+
+# ──────────────────────────────────────────────
+# ConversationHandler
 # ──────────────────────────────────────────────
 
 def build_booking_conversation() -> ConversationHandler:
@@ -134,25 +158,21 @@ def build_booking_conversation() -> ConversationHandler:
 
 
 # ──────────────────────────────────────────────
-# Регистрация всех хендлеров
+# Регистрация хендлеров
 # ──────────────────────────────────────────────
 
 def register_handlers(app: Application) -> None:
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help",  cmd_help))
     app.add_handler(CommandHandler("admin", cmd_admin))
-
     app.add_handler(build_booking_conversation())
-
     app.add_handler(CallbackQueryHandler(cb_back_main,   pattern="^back_main$"))
     app.add_handler(CallbackQueryHandler(cb_contacts,    pattern="^contacts$"))
     app.add_handler(CallbackQueryHandler(cb_my_bookings, pattern="^my_bookings$"))
-
     app.add_handler(CallbackQueryHandler(cb_cancel_menu, pattern="^cancel_menu$"))
     app.add_handler(CallbackQueryHandler(cb_cancel_id,   pattern=r"^cancel_id_\d+$"))
     app.add_handler(CallbackQueryHandler(cb_do_cancel,   pattern=r"^do_cancel_\d+$"))
     app.add_handler(CallbackQueryHandler(cb_view_booking,pattern=r"^view_booking_\d+$"))
-
     app.add_handler(CallbackQueryHandler(cb_admin_menu,      pattern="^adm_menu$"))
     app.add_handler(CallbackQueryHandler(cb_adm_today,       pattern="^adm_today$"))
     app.add_handler(CallbackQueryHandler(cb_adm_pick_date,   pattern="^adm_pick_date$"))
@@ -172,7 +192,7 @@ def register_handlers(app: Application) -> None:
 
 
 # ──────────────────────────────────────────────
-# Startup / Shutdown hooks
+# Startup / Shutdown
 # ──────────────────────────────────────────────
 
 async def on_startup(app: Application) -> None:
@@ -200,8 +220,10 @@ async def on_shutdown(app: Application) -> None:
 
 def main() -> None:
     if BOT_TOKEN == "YOUR_BOT_TOKEN_HERE":
-        logger.error("❌ BOT_TOKEN не задан! Отредактируйте config.py или .env")
+        logger.error("❌ BOT_TOKEN не задан!")
         sys.exit(1)
+
+    threading.Thread(target=run_health_server, daemon=True).start()
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
