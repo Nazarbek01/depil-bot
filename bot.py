@@ -5,6 +5,7 @@
 
 import logging
 import sys
+import asyncio
 
 from telegram import Update
 from telegram.ext import (
@@ -137,26 +138,21 @@ def build_booking_conversation() -> ConversationHandler:
 # ──────────────────────────────────────────────
 
 def register_handlers(app: Application) -> None:
-    # Команды
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help",  cmd_help))
     app.add_handler(CommandHandler("admin", cmd_admin))
 
-    # ConversationHandler (запись)
     app.add_handler(build_booking_conversation())
 
-    # Навигация главного меню
     app.add_handler(CallbackQueryHandler(cb_back_main,   pattern="^back_main$"))
     app.add_handler(CallbackQueryHandler(cb_contacts,    pattern="^contacts$"))
     app.add_handler(CallbackQueryHandler(cb_my_bookings, pattern="^my_bookings$"))
 
-    # Отмена записи (пользователь)
     app.add_handler(CallbackQueryHandler(cb_cancel_menu, pattern="^cancel_menu$"))
     app.add_handler(CallbackQueryHandler(cb_cancel_id,   pattern=r"^cancel_id_\d+$"))
     app.add_handler(CallbackQueryHandler(cb_do_cancel,   pattern=r"^do_cancel_\d+$"))
     app.add_handler(CallbackQueryHandler(cb_view_booking,pattern=r"^view_booking_\d+$"))
 
-    # ── Админ-панель ──
     app.add_handler(CallbackQueryHandler(cb_admin_menu,      pattern="^adm_menu$"))
     app.add_handler(CallbackQueryHandler(cb_adm_today,       pattern="^adm_today$"))
     app.add_handler(CallbackQueryHandler(cb_adm_pick_date,   pattern="^adm_pick_date$"))
@@ -202,7 +198,7 @@ async def on_shutdown(app: Application) -> None:
 # Main
 # ──────────────────────────────────────────────
 
-def main() -> None:
+async def main() -> None:
     if BOT_TOKEN == "YOUR_BOT_TOKEN_HERE":
         logger.error("❌ BOT_TOKEN не задан! Отредактируйте config.py или .env")
         sys.exit(1)
@@ -218,11 +214,18 @@ def main() -> None:
     register_handlers(app)
 
     logger.info("🚀 Запуск бота Studio Depil Rina...")
-    app.run_polling(
-        allowed_updates=Update.ALL_TYPES,
-        drop_pending_updates=True,
-    )
+
+    async with app:
+        await app.start()
+        await app.updater.start_polling(
+            allowed_updates=Update.ALL_TYPES,
+            drop_pending_updates=True,
+        )
+        logger.info("✅ Polling started.")
+        await app.updater.idle()
+        await app.updater.stop()
+        await app.stop()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
