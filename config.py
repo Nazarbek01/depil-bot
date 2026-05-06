@@ -15,7 +15,7 @@ BOT_TOKEN: str = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
 # Telegram ID администратора / мастера
 # Узнать свой ID: @userinfobot
 # ──────────────────────────────────────────────
-ADMIN_CHAT_ID: int = int(os.getenv("ADMIN_CHAT_ID", "0"))  # ← замените на ваш ID
+ADMIN_CHAT_ID: int = 8624836481 # ← замените на ваш ID
 
 # ──────────────────────────────────────────────
 # База данных
