@@ -198,10 +198,13 @@ async def on_shutdown(app: Application) -> None:
 # Main
 # ──────────────────────────────────────────────
 
-async def main() -> None:
+def main() -> None:
     if BOT_TOKEN == "YOUR_BOT_TOKEN_HERE":
         logger.error("❌ BOT_TOKEN не задан! Отредактируйте config.py или .env")
         sys.exit(1)
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
     app = (
         ApplicationBuilder()
@@ -214,18 +217,11 @@ async def main() -> None:
     register_handlers(app)
 
     logger.info("🚀 Запуск бота Studio Depil Rina...")
-
-    async with app:
-        await app.start()
-        await app.updater.start_polling(
-            allowed_updates=Update.ALL_TYPES,
-            drop_pending_updates=True,
-        )
-        logger.info("✅ Polling started.")
-        await app.updater.idle()
-        await app.updater.stop()
-        await app.stop()
+    app.run_polling(
+        allowed_updates=Update.ALL_TYPES,
+        drop_pending_updates=True,
+    )
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
